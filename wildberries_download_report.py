@@ -24,21 +24,19 @@ class DownloadReportWildberries:
     '''
     def __init__(self):
         self.__chrome_options = Options()
-        self.__chrome_options.add_argument("--headless")
+        # self.__chrome_options.add_argument("--headless=chrome")
         self.__chrome_options.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/104.0.5112.124 YaBrowser/22.9.4.863 Yowser/2.5 Safari/537.36")
         self.__chrome_options.add_argument("--disable-blink-features=AutomationControlled")
-        prefs = {"profile.default_content_settings.popups": 0,
-                 "download.default_directory": dir_for_save_reports, # IMPORTANT - ENDING SLASH V IMPORTANT
-                 "directory_upgrade": True}
-        self.__chrome_options.experimental_options["prefs"] = prefs
+        prefs = {'download.default_directory' : dir_for_save_reports}
+        self.__chrome_options.add_experimental_option('prefs', prefs)
         self.browser = webdriver.Chrome("chromedriver.exe", options=self.__chrome_options)
         
     def start(self):
-        self._login()
-        self. download_report_sales()
-        self.download_report_brand_share()
-        self.download_report_warehouse_remains()
-        print("Выгрузка отчётов закончена")
+        if self._login():
+            self. download_report_sales()
+            self.download_report_brand_share()
+            self.download_report_warehouse_remains()
+            print("Выгрузка отчётов закончена")
         
     def _login(self, auth_cookies=True) -> bool:
         """Функция для входа в лк продавца Wildberries"""
@@ -69,30 +67,26 @@ class DownloadReportWildberries:
         """Функция выгружает отчет по продажам из лк продавца Wildberries"""
         self.browser.get(url_report_3)
         print("Выгружаю отчет по продажам")
+        time.sleep(4)
         try:
             self.browser.find_element(By.CLASS_NAME, value="WarningCookiesBannerCard__button__E6TkOOyxzr").click() # попытка кликнуть на кнопку Принять куки
         except NoSuchElementException:
             pass
+        time.sleep(1)
         self.browser.find_element(By.CLASS_NAME, value="Date-input__icon-button__CPx0Ca4N2z").click()
-        time.sleep(0.3)
-        if not date_from:
-            try:
-                self.browser.find_elements(By.CLASS_NAME, value="Simple-input__Ua-RpiriLS")[1].find_element(By.TAG_NAME, value="input").send_keys(date_from) # ввод даты начала периода формирования отчета
-                time.sleep(0.5)
-                self.browser.find_elements(By.CLASS_NAME, value="Simple-input__Ua-RpiriLS")[-1].find_element(By.TAG_NAME, value="input").send_keys(date_from) # ввод даты начала периода формирования отчета
-                time.sleep(0.5)
-                self.browser.find_element(By.CLASS_NAME, value="DatePickerMenu__save-button__RNh8SIN-35").click() # нажатие на кнопку сохранить выбранную дату
-            except NoSuchElementException:
-                return "Не удалось указать дату для выгрузки отчёта"
-            time.sleep(1)
-            try:
-                self.browser.find_element(By.CLASS_NAME, value="WarningCookiesBannerCard__button__E6TkOOyxzr").click() # попытка кликнуть на кнопку Принять куки
-            except NoSuchElementException:
-                pass
-            topics_xpath = "//div[@class='Export-button__Gij5Q2THSr']//span[text()='Выгрузить в Excel']"
-            elem = self.browser.find_element(By.XPATH, value=topics_xpath)
-            time.sleep(1)
-            elem.click() # нажатие на кнопку Выгрузить в Excel
+        time.sleep(1)
+        try:
+            self.browser.find_elements(By.CLASS_NAME, value="Simple-input__Ua-RpiriLS")[1].find_element(By.TAG_NAME, value="input").send_keys(date_from) # ввод даты начала периода формирования отчета
+            time.sleep(1.5)
+            self.browser.find_elements(By.CLASS_NAME, value="Simple-input__Ua-RpiriLS")[-1].find_element(By.TAG_NAME, value="input").send_keys(date_from) # ввод даты начала периода формирования отчета
+            time.sleep(1.5)
+            self.browser.find_element(By.CLASS_NAME, value="DatePickerMenu__save-button__RNh8SIN-35").click() # нажатие на кнопку сохранить выбранную дату
+        except NoSuchElementException:
+            return "Не удалось указать дату для выгрузки отчёта"
+        time.sleep(3)
+        elem = self.browser.find_element(By.CLASS_NAME, value="Export-button__Gij5Q2THSr")
+        time.sleep(1)
+        elem.click() # нажатие на кнопку Выгрузить в Excel
         
         
     def download_report_brand_share(self):
@@ -104,43 +98,10 @@ class DownloadReportWildberries:
         """Функция выгружает отчет по остаткам на складе из лк продавца Wildberries"""
         self.browser.get(url_report_11)
         print("Выгружаю отчет по остаткам на складе")
-        topics_xpath = "//button[@class='Button-link__YPcDbilyau Button-link--button__M-0nTjDTHF Button-link--interface__vnZbVDTowf Button-link--button-big__z3J9T2QnNl']//span[text()='Выгрузить в Excel']"
-        elem = self.browser.find_element(By.XPATH, value=topics_xpath)
+        elem = self.browser.find_element(By.CLASS_NAME, value="Warehouse-remains__button-excel__ffdvFDunSZ")
         time.sleep(1)
         elem.click() # нажатие на кнопку Выгрузить в Excel
 
-chrome_options = Options()
-chrome_options.add_argument("--headless=chrome")
-chrome_options.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/104.0.5112.124 YaBrowser/22.9.4.863 Yowser/2.5 Safari/537.36")
-chrome_options.add_argument("--disable-blink-features=AutomationControlled")
-prefs = {'download.default_directory' : dir_for_save_reports}
-chrome_options.add_experimental_option('prefs', prefs)
-browser = webdriver.Chrome("chromedriver.exe", options=chrome_options)
-browser.get(wb_url)
-for cookie in pickle.load(open("cook_wild", "rb")):
-    browser.add_cookie(cookie)
-browser.refresh()
-browser.get(url_report_3)
-time.sleep(1)
-
-browser.find_element(By.CLASS_NAME, value="Date-input__icon-button__CPx0Ca4N2z").click()
-time.sleep(1.5)
-browser.find_elements(By.CLASS_NAME, value="Simple-input__Ua-RpiriLS")[1].find_element(By.TAG_NAME, value="input").send_keys(date_from) # ввод даты начала периода формирования отчета
-time.sleep(1)
-browser.find_elements(By.CLASS_NAME, value="Simple-input__Ua-RpiriLS")[-1].find_element(By.TAG_NAME, value="input").send_keys(date_from) # ввод даты начала периода формирования отчета
-time.sleep(1)
-browser.find_element(By.CLASS_NAME, value="DatePickerMenu__save-button__RNh8SIN-35").click() # нажатие на кнопку сохранить выбранную дату
-time.sleep(1)
-try:
-    browser.find_element(By.CLASS_NAME, value="WarningCookiesBannerCard__button__E6TkOOyxzr").click() # попытка кликнуть на кнопку Принять куки
-except NoSuchElementException:
-    pass
-topics_xpath = "//div[@class='Export-button__Gij5Q2THSr']//span[text()='Выгрузить в Excel']"
-elem = browser.find_element(By.XPATH, value=topics_xpath)
-# browser.execute_script("arguments[0].scrollIntoView(true);", elem)
-elem.click()
-browser.find_element(By.CLASS_NAME, value="Export-button__Gij5Q2THSr").click()
-browser.quit()
 
 wb_download_reports = DownloadReportWildberries()
 
